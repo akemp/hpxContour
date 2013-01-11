@@ -4,17 +4,12 @@
 #define INCLUDED
 #include "datastructures.hpp"
 #endif
-//#include "kdtree.h"
-//#include "treeHeaders.hpp"
-//forward declarations
 
 #include <boost/accumulators/accumulators.hpp>
 
 #include <boost/geometry/extensions/index/rtree/rtree.hpp>
 
 //using namespace spatial_index;
-
-
 
 typedef model::point<double, 2, cs::cartesian> pointxy;
 typedef vector<pointxy> lineS;
@@ -27,28 +22,8 @@ void runPseudoRandomTests(int testNum);
 void createTestData(int x, int y);
 void runDataTests(double iterations, int limit);
 
-double getMargin(pointxy p1, pointxy p2)
-{
-    double d1 = abs(p1.get<0>()-p2.get<0>());
-    double d2 = abs(p1.get<1>()-p2.get<1>());
-    if (d1 > d2) return d1;
-    else return d2;
-}
-
-vector<triangle> rangedTrigs(const vector<triangle> &trigs, double height, bool sorted)
-{
-    vector<triangle> store;
-    for (vector<triangle>::const_iterator it = trigs.begin(); it < trigs.end(); ++it)
-    {
-        triangle trig = *it;
-        if (trig.minimum <= height && trig.maximum >= height)
-            store.push_back(trig);
-        if (sorted && trig.minimum >= height)
-            break;
-    }
-    return store;
-}
-
+//Find the line segments which share vertices and dynamically create an R-Tree to sort through them.
+//Remove and add vertices as appropriate
 void findLine(vector<pointxy>& ints, const double &margin, rtree& rt, int& counts, vector<lineS> &segs)
 {
     pointxy p1(ints[0].get<0>()-margin,ints[0].get<1>()-margin);
@@ -58,23 +33,30 @@ void findLine(vector<pointxy>& ints, const double &margin, rtree& rt, int& count
     pointxy p4(ints[1].get<0>()+margin,ints[1].get<1>()+margin);
     box b2(p3,p4);
     auto v = rt.find(b1);
+    //if **NO** shared vertex with the first point found
     if (v.size() <= 0)
     {
         v = rt.find(b2);
+        //if **NO** shared vertex with the second point found
         if (v.size() <= 0)
         {
-            rt.insert(b1, counts);
-            rt.insert(b2, counts);
-            lineS temp;
-            temp.push_back(ints[0]);
-            temp.push_back(ints[1]);
-            segs.push_back(temp);
-            counts++;
+            if (boost::geometry::distance(ints[0], ints[1]) > margin)
+            {
+                rt.insert(b1, counts);
+                rt.insert(b2, counts);
+                lineS temp;
+                temp.push_back(ints[0]);
+                temp.push_back(ints[1]);
+                segs.push_back(temp);
+                counts++;
+            }
         }
         else
         {
             int index = v[0];
+            //remove the shared point, we have a new endpoint now
             rt.remove(b2,index);
+            //add the new endpoint
             rt.insert(b1,index);
             pointxy begin = segs[index].front();
             pointxy end = segs[index].back();
@@ -82,6 +64,7 @@ void findLine(vector<pointxy>& ints, const double &margin, rtree& rt, int& count
             double dist2 = boost::geometry::distance(end, ints[1]);
             if (dist2 < dist1)
             {
+                //A little error checking. Due to rounding errors this might be toggled a sporadically during an application.
                 double dist = boost::geometry::distance(end, ints[1]);
                 if (dist > margin)
                     cout << "Error 2-1: Distance too great!\n";
@@ -92,6 +75,7 @@ void findLine(vector<pointxy>& ints, const double &margin, rtree& rt, int& count
                 reverse(segs[index].begin(), segs[index].end());
                 end = segs[index].back();
                 double dist = boost::geometry::distance(end, ints[1]);
+                //A little error checking. Due to rounding errors this might be toggled a sporadically during an application.
                 if (dist > margin)
                 {
                     cout << "Error 2-2: Distance too great!\n";
@@ -103,7 +87,9 @@ void findLine(vector<pointxy>& ints, const double &margin, rtree& rt, int& count
     else
     {
         int index = v[0];
+        //remove the shared point, we have a new endpoint now
         rt.remove(b1,index);
+        //add the new endpoint
         rt.insert(b2,index);
         pointxy begin = segs[index].front();
         pointxy end = segs[index].back();
@@ -112,6 +98,7 @@ void findLine(vector<pointxy>& ints, const double &margin, rtree& rt, int& count
         if (dist2 < dist1)
         {
             double dist = boost::geometry::distance(end, ints[0]);
+            //A little error checking. Due to rounding errors this might be toggled a sporadically during an application.
             if (dist > margin)
                 cout << "Error 1-1: Distance too great!\n";
             segs[index].push_back(ints[1]);
@@ -121,6 +108,7 @@ void findLine(vector<pointxy>& ints, const double &margin, rtree& rt, int& count
             reverse(segs[index].begin(), segs[index].end());
             end = segs[index].back();
             double dist = boost::geometry::distance(end, ints[0]);
+            //A little error checking. Due to rounding errors this might be toggled a sporadically during an application.
             if (dist > margin)
                 cout << "Error 1-2: Distance too great!\n";
             segs[index].push_back(ints[1]);
@@ -154,6 +142,7 @@ void outputLines(const size_t numLines)
     double maxZ = -100000;
     double minZ = 100000;
     vector<triangle> trigs;
+    //We fill up the geometry containers and find the range of data here. We need the range for when we generate the contour lines.
     for (boost::uint32_t i = 0; i < num_triangles; ++i)
     {
         vector<double> dummy;
@@ -206,6 +195,8 @@ void outputLines(const size_t numLines)
     vector<int> counts;
     vector<vector<lineS>> manySegs;
     
+
+    //fill up the various storage containers with empty members
     for (double i = 0; i < numLines; ++i)
     {
         rtree rt(32,8);
@@ -217,9 +208,11 @@ void outputLines(const size_t numLines)
         manySegs.push_back(temp);
     }
     
-    double margin = 0.000001;
+    double margin = 0.000001; //margin of error
     
-
+    //Go through the triangles and generate the contour lines.
+    //This could be parallelized by running ALL of the triangles through several different threads which only generate contour lines for
+    //a set height. For example, 4 threads with each one processing a certain quartile of data.
     for (vector<triangle>::iterator it = trigs.begin(); it < trigs.end(); ++it)
     {
         triangle trig = (*it);
@@ -235,6 +228,7 @@ void outputLines(const size_t numLines)
                 }
                 else if (ints.size() == 3)
                 {
+                    //Planar intersections - just create three separate line segments and deal with those.
                     cout << "Planar intersection located.\n";
                     vector<pointxy> ints1;
                     vector<pointxy> ints2;
@@ -263,6 +257,8 @@ void outputLines(const size_t numLines)
         cout << "Entry " << i+1 << endl;
         bool found = true;
         bool begun = true;
+        //This is almost a carbon copy of findLine. The only difference is that it uses a conditional so it does not stop
+        //combining line segments with shared vertices prematurely. Accuracy is key here.
         while (found || begun)
         {
             int counter = 0;
@@ -357,7 +353,7 @@ void outputLines(const size_t numLines)
                 manySegs[i] = segs;
         }
     }
-    
+    //we output the file to a simple graphic format. The segment vectors are not grouped by height in manySegs
     ofstream fout("out.obj");
 
     int count = 1;
@@ -391,7 +387,7 @@ int main()
 {
     try {
         
-        outputLines<double>(300);
+        outputLines<double>(110);
         return 0;
     }
     catch (adcirc::exception const& e) {
