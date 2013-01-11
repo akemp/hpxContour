@@ -40,7 +40,7 @@ void findLine(vector<pointxy>& ints, const double &margin, rtree& rt, int& count
         //if **NO** shared vertex with the second point found
         if (v.size() <= 0)
         {
-            if (boost::geometry::distance(ints[0], ints[1]) > margin)
+            if (boost::geometry::distance(ints[0], ints[1]) > margin*2.0)
             {
                 rt.insert(b1, counts);
                 rt.insert(b2, counts);
