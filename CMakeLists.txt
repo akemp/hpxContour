@@ -9,14 +9,25 @@ set(CMAKE_MODULE_PATH
     $ENV{HPX_DIR}/share/cmake-2.8/Modules)
 
 # Instruct cmake to find the HPX settings
-find_package(HPX REQUIRED)
+find_package(HPX)
 
 include_directories(${HPX_INCLUDE_DIR})
 link_directories(${HPX_LIBRARY_DIR})
 
-find_package(HPX_SHAPELIB)
-find_package(HPX_NETCDF)
+find_package(HPX_NETCDF REQUIRED)
+include_directories(${NETCDF_INCLUDE_DIR})
+link_directories(${NETCDF_LIBRARY_DIR})
 
+include (HPX_INCLUDE)
+
+set(CMAKE_MODULE_PATH 
+    ${CMAKE_SOURCE_DIR}/cmake)
+
+find_package(HPX_SHAPELIB REQUIRED)
+include_directories(${SHAPELIB_INCLUDE_DIR})
+link_directories(${SHAPELIB_LIBRARY_DIR})
+
+	
 set (sources 
 	contour_lines/contour.cpp
 	contour_lines/datastructures.hpp
@@ -27,10 +38,9 @@ set (sources
 	contour_lines/treeHeaders.hpp
 	contour_lines/zlib.cpp
 	)
-
 # add example executable
 add_hpx_executable(contour_lines
              SOURCES ${sources}
              ${PLAYGROUND_FLAGS} 
              FOLDER 
-             COMPONENT_DEPENDENCIES ${hpx_RUNTIME_LIBRARIES}  shapelib netcdf )
+             COMPONENT_DEPENDENCIES ${hpx_RUNTIME_LIBRARIES} netcdf shapelib)
