@@ -11,6 +11,10 @@ bool shpFlag()
 {
 	return true;
 }
+bool svgFlag()
+{
+	return true;
+}
 
 
 bool inputValues(variables_map vm, string &input, string &output, vector<string> &attnames, vector<double> &heights,
@@ -327,4 +331,60 @@ void outputShape(boost::shared_array<boost::shared_ptr<vector<vector<pointxy>>>>
 		DBFClose(hDBF);
 	}
 	return;
+}
+
+void outputSvg(boost::shared_array<boost::shared_ptr<vector<vector<pointxy>>>> &contours,
+    vector<double> &heights, int nL, string output)
+{
+     {
+        vector<string> colors;
+        colors.push_back("sienna");
+        colors.push_back("saddlebrown");
+        colors.push_back("peru");
+        colors.push_back("navajowhite");
+        colors.push_back("darkgoldenrod");
+        colors.push_back("darkkhaki");
+        colors.push_back("cornsilk");
+        colors.push_back("wheat");
+	    string filename = output + ".svg";
+	    std::ofstream fout(filename);
+	    cout << "Writing to file.\n";
+        double multer = 1000;
+        double divx = -1.0;
+        double divy = 1.0;
+        fout << " <svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"100000\" height = \"100000\">\n";
+	    int counter = 0;
+        //fout << "<rect width=\"" << multer << "\" height=\"" << multer << "\" style=\"fill:Sienna;fill-opacity=0.5;stroke-width:0;\"/>";
+        double addy = 0;
+        double addx = 0;
+        {
+	        for (int lin = 0; lin < nL; ++lin)
+	        {
+		        for (vector<vector<pointxy>>::iterator it = contours[lin]->begin(); it < contours[lin]->end(); ++it)
+		        {
+                    int random = rand()%colors.size();
+                    int random2 = rand()%colors.size();
+			        vector<pointxy> intersect = (*it);
+                    {
+			            fout << "<path d=\"";
+                        fout << "M" << intersect[0].get<0>()*multer/divx+addx << "," << intersect[0].get<1>()*multer/divy+addy << " L";
+			            for (int k = 0; k < intersect.size(); k++)
+			            {
+				            fout << " " << intersect[k].get<0>()*multer/divx+addx << "," << intersect[k].get<1>()*multer/divy+addy << " ";
+			            }
+                        fout << " " << intersect.back().get<0>()*multer/divx+addx << "," << intersect.back().get<1>()*multer/divy+addy << " ";
+                        fout << " \" stroke=\"";
+                        fout << colors[random];
+                        fout << "\" stroke-width=\"2\" stroke-opacity=\"" << 1 << "\" fill=\"" << "none";
+
+                        fout << "\" fill-opacity=\"" << 0 << "\"/>" << endl;
+                    }
+                    counter++;
+		        }
+	        }
+        }
+        fout << "</svg>";
+	    fout.close();
+	    cout << "Written to svg file.\n";
+     }
 }

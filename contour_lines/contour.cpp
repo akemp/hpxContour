@@ -7,11 +7,14 @@
 
 bool objFlag();
 bool shpFlag();
+bool svgFlag();
 bool inputValues(variables_map vm, string &input, string &output, vector<string> &attnames, vector<double> &heights,
 	int &timestep, bool &outputInput, string& xs, string& ys);
 
 void outputObj(boost::shared_array<boost::shared_ptr<vector<vector<pointxy>>>> &contours, vector<double> &heights, int nL,string output);
 void outputShape(boost::shared_array<boost::shared_ptr<vector<vector<pointxy>>>> &contours, vector<double> &heights, int nL,string output);
+void outputSvg(boost::shared_array<boost::shared_ptr<vector<vector<pointxy>>>> &contours,
+    vector<double> &heights, int nL, string output);
 
 int retLine(double current, int size,
 	boost::shared_array<double> &x, boost::shared_array<double> &y, vector<boost::shared_array<double>> &depth,
@@ -73,6 +76,8 @@ int retLine(double current, int size, int counter,
 		outputObj(contours, heights, nL,output);
 	if (shpFlag())
 		outputShape(contours, heights, nL,output);
+	if (svgFlag())
+		outputSvg(contours, heights, nL,output);
 	return;
 }
 
