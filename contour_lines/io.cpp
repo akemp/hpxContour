@@ -13,7 +13,7 @@ bool shpFlag()
 }
 bool svgFlag()
 {
-	return true;
+	return false;
 }
 
 
@@ -280,7 +280,7 @@ void outputShape(boost::shared_array<boost::shared_ptr<vector<vector<pointxy>>>>
 	{
 		SHPHandle	hSHPHandle;
 		string filename = output + ".shp";
-		hSHPHandle = SHPCreate( filename.c_str(), SHPT_ARC );
+		hSHPHandle = SHPCreate( filename.c_str(), SHPT_POLYGON );
 	
 		int counter = 0;
 		int total = 0;
@@ -302,7 +302,7 @@ void outputShape(boost::shared_array<boost::shared_ptr<vector<vector<pointxy>>>>
 					ma[k] = 0;
 					size++;
 				}
-				psShape = SHPCreateObject( SHPT_ARC, -1, 0, NULL, NULL,
+				psShape = SHPCreateObject( SHPT_POLYGON, -1, 0, NULL, NULL,
 											size, xa, ya, za, ma );
 				SHPWriteObject( hSHPHandle, -1, psShape );
 				SHPDestroyObject( psShape );
@@ -338,25 +338,21 @@ void outputSvg(boost::shared_array<boost::shared_ptr<vector<vector<pointxy>>>> &
 {
      {
         vector<string> colors;
-        colors.push_back("sienna");
-        colors.push_back("saddlebrown");
-        colors.push_back("peru");
-        colors.push_back("navajowhite");
-        colors.push_back("darkgoldenrod");
-        colors.push_back("darkkhaki");
-        colors.push_back("cornsilk");
-        colors.push_back("wheat");
+        colors.push_back("black");
+        colors.push_back("gray");
+        colors.push_back("dimgray");
+        colors.push_back("lightgray");
 	    string filename = output + ".svg";
 	    std::ofstream fout(filename);
 	    cout << "Writing to file.\n";
-        double multer = 1000;
-        double divx = -1.0;
+        double multer = 100;
+        double divx = 1.0;
         double divy = 1.0;
-        fout << " <svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"100000\" height = \"100000\">\n";
+        fout << " <svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"10000\" height = \"10000\">\n";
 	    int counter = 0;
         //fout << "<rect width=\"" << multer << "\" height=\"" << multer << "\" style=\"fill:Sienna;fill-opacity=0.5;stroke-width:0;\"/>";
         double addy = 0;
-        double addx = 0;
+        double addx = 10000;
         {
 	        for (int lin = 0; lin < nL; ++lin)
 	        {

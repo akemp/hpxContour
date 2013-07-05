@@ -61,9 +61,6 @@ vector<pointxy> planeInter(double height,vector<double> input)
     assign_values(p2, input[3], input[4], input[5]);
     model::point<double, 3, cs::cartesian> p3;
     assign_values(p3, input[6], input[7], input[8]);
-    //model::point<double, 3, cs::cartesian> p4;
-    //assign_values(p4, input[0], input[1], input[2]);
-    //append(this->poly,this->points);
     
     vector<pointxy > s;
     int intersects = 0;
@@ -99,25 +96,37 @@ int getNL()
 {
 	return 50;
 }
+
 int retLine(double current, int size,
 	boost::shared_array<double> &x, boost::shared_array<double> &y, vector<boost::shared_array<double>> &depth,
 	boost::shared_array<int> &ele, boost::shared_ptr< vector <vector <pointxy> >>& contours)
 {
 	int ds = depth.size();
+    vector<std::pair<int,int>> pairs;
 	for (int i = 1; i < size; ++i)
 	{
 		int index = i*3;
 		vector<double> stores;
 		stores.reserve(9);
 		bool use = true;
+        vector<int> places;
 		for (int j = 0; j < 3; ++j)
+        {
+            places.push_back(ele[index]-1);
+			index++;
+        }
+        vector<std::pair<int,int>> p;
+        vector<double> zeds;
+        
+		for (vector<int>::iterator it = places.begin(); it < places.end(); ++it)
 		{
-			int place = ele[index]-1;
+			int place = *it;
 			stores.push_back(x[place]);
 			stores.push_back(y[place]);
 			if (ds == 1)
 			{
-				stores.push_back((depth.front())[place]);
+                zeds.push_back((depth.front())[place]);
+				stores.push_back(zeds.back());
 			}
 			else
 			{
@@ -134,20 +143,147 @@ int retLine(double current, int size,
 				}
 				
 				total = sqrt(total);
+                zeds.push_back(total);
 				stores.push_back(total);
 				
 			}
-			index++;
 
 		}
 		if (use)
 		{
 			vector<pointxy> line = planeInter(current,stores);
 			if (line.size() >= 2)
+            {
 				contours->push_back(line);
+                if (zeds[1] >= current || zeds[0] >= current)
+                    pairs.push_back(std::pair<int,int>(places[0],places[1]));
+                if (zeds[2] >= current || zeds[1] >= current)
+                    pairs.push_back(std::pair<int,int>(places[1],places[2]));
+                if (zeds[2] >= current || zeds[0] >= current)
+                    pairs.push_back(std::pair<int,int>(places[2],places[0]));
+            }
 		}
 	}
-	
+    vector<std::pair<int, int>> unmatched;
+    for (vector<std::pair<int,int>>::iterator it = pairs.begin(); it < pairs.end(); ++it)
+    {
+        std::pair<int,int> search1 = *it;
+        std::pair<int,int> search2(search1.second, search1.first);
+        vector<std::pair<int,int>>::iterator query1 = find(it+1,pairs.end(),search1);
+        vector<std::pair<int,int>>::iterator query2 = find(it+1,pairs.end(),search2);
+        if (query1 == pairs.end() && query2 == pairs.end())
+        {
+            unmatched.push_back(search1);
+        }
+        else
+        {
+            while (query1 != pairs.end())
+            {
+                pairs.erase(query1);
+                query1 = find(query1,pairs.end(),search1);
+            }
+            while (query2 != pairs.end())
+            {
+                pairs.erase(query2);
+                query2 = find(query2,pairs.end(),search2);
+            }
+        }
+    }
+    for (vector<std::pair<int,int>>::iterator it = unmatched.begin(); it < unmatched.end(); ++it)
+    {
+        std::pair<int,int> p = *it;
+        int p1 = p.first;
+        int p2 = p.second;
+        {
+            vector<double> stores;
+		    stores.push_back(x[p1]);
+		    stores.push_back(y[p1]);
+            stores.push_back(0);
+		    stores.push_back(x[p2]);
+		    stores.push_back(y[p2]);
+            stores.push_back(0);
+		    stores.push_back(x[p1]);
+		    stores.push_back(y[p1]);
+            
+			if (ds == 1)
+			{
+                stores.push_back(depth.front()[p1]);
+			}
+			else
+			{
+				double total = 0;
+				for (int k = 0; k < ds; ++k)
+				{
+					double temp = (depth[k])[p1];
+					if (temp <= -999)
+					{
+						break;
+					}
+					total += temp*temp;
+				}
+				
+				total = sqrt(total);
+				stores.push_back(total);
+                				
+			}
+            
+			vector<pointxy> line = planeInter(current,stores);
+			if (line.size() >= 2)
+            {
+				contours->push_back(line);				
+			}
+        }
+        
+        {
+            vector<double> stores;
+		    stores.push_back(x[p1]);
+		    stores.push_back(y[p1]);
+			if (ds == 1)
+			{
+                stores.push_back(depth.front()[p1]);
+			}
+			else
+			{
+				double total = 0;
+				for (int k = 0; k < ds; ++k)
+				{
+					double temp = (depth[k])[p1];
+					total += temp*temp;
+				}
+				
+				total = sqrt(total);
+				stores.push_back(total);
+				
+			}
+		    stores.push_back(x[p2]);
+		    stores.push_back(y[p2]);
+			if (ds == 1)
+			{
+                stores.push_back(depth.front()[p2]);
+			}
+			else
+			{
+				double total = 0;
+				for (int k = 0; k < ds; ++k)
+				{
+					double temp = (depth[k])[p2];
+					total += temp*temp;
+				}
+				
+				total = sqrt(total);
+				stores.push_back(total);
+				
+			}
+		    stores.push_back(x[p2]);
+		    stores.push_back(y[p2]);
+            stores.push_back(0);
+			vector<pointxy> line = planeInter(current,stores);
+			if (line.size() >= 2)
+            {
+				contours->push_back(line);				
+			}
+        }
+    }
 	double margin = 0.000001;
 
 	{
