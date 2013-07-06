@@ -97,6 +97,11 @@ int getNL()
 	return 50;
 }
 
+bool sortFun(std::pair<int,int> &p1, std::pair<int,int> &p2)
+{
+    return (p1.first >= p2.first);
+}
+
 int retLine(double current, int size,
 	boost::shared_array<double> &x, boost::shared_array<double> &y, vector<boost::shared_array<double>> &depth,
 	boost::shared_array<int> &ele, boost::shared_ptr< vector <vector <pointxy> >>& contours)
@@ -342,28 +347,58 @@ int retLine(double current, int size,
     {
         
         vector<std::pair<int, int>> unmatched;
-        for (vector<std::pair<int,int>>::iterator it = pairs.begin(); it < pairs.end(); ++it)
+        vector<std::pair<int, int>> matched;
         {
-            std::pair<int,int> search1 = *it;
-            std::pair<int,int> search2(search1.second, search1.first);
-            vector<std::pair<int,int>>::iterator query1 = find(it+1,pairs.end(),search1);
-            vector<std::pair<int,int>>::iterator query2 = find(it+1,pairs.end(),search2);
-            if (query1 == pairs.end() && query2 == pairs.end())
+		    vector<pointxy> pointsf;
+		    const int size = pairs.size();
+		    pointsf.reserve(size);
+		    vector<pointxy> pointsb;
+		    pointsb.reserve(size);
+            for (vector<std::pair<int,int>>::iterator it = pairs.begin(); it < pairs.end(); ++it)
             {
-                unmatched.push_back(search1);
+                std::pair<int,int> p = *it;
+                pointsf.push_back(pointxy(p.first, p.second));
+                pointsb.push_back(pointxy(p.second, p.first));
             }
-            else
+			const kd_tree treef(pointsf);
+			const kd_tree treeb(pointsb);
+            for (vector<std::pair<int,int>>::iterator it = pairs.begin(); it < pairs.end(); ++it)
             {
-                while (query1 != pairs.end())
+                std::pair<int,int> pairf = *it;
+                std::pair<int,int> pairb(pairf.second, pairf.first);
+                pointxy pf(pairf.first, pairf.second);
+                int occur = 0;
+                int place = treef.nearest(pf,pointsf,-1,0.01);
+                while(place != -1)
                 {
-                    pairs.erase(query1);
-                    query1 = find(query1,pairs.end(),search1);
+                    std::pair<int,int> found = pairs[place];
+                    if (found == pairf || found == pairb)
+                        occur++;
+                    if (occur > 1)
+                    {
+                        break;
+                    }
+                    place = treef.nearest(pf,pointsf,place,0.01);
                 }
-                while (query2 != pairs.end())
+                if (occur > 1)
                 {
-                    pairs.erase(query2);
-                    query2 = find(query2,pairs.end(),search2);
+                    continue;
                 }
+                place = treeb.nearest(pf,pointsb,-1,0.01);
+                while(place != -1)
+                {
+                    std::pair<int,int> found = pairs[place];
+                    if (found == pairf || found == pairb)
+                        occur++;
+                    if (occur > 1)
+                        break;
+                    place = treef.nearest(pf,pointsf,place,0.01);
+                }
+                if (occur > 1)
+                {
+                    continue;
+                }
+                unmatched.push_back(pairf);
             }
         }
         vector<vector<pointxy>> pgap;

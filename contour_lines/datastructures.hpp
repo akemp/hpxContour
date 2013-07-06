@@ -30,4 +30,5 @@ using boost::program_options::value;
 
 BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
 typedef model::point<double, 2, cs::cartesian> pointxy;
+
 #endif
