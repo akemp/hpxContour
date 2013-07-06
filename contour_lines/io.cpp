@@ -108,6 +108,7 @@ bool inputValues(variables_map vm, string &input, string &output, vector<string>
 	{
 		outputInput = true;
 	}
+    std::sort(heights.begin(), heights.end());
 	return true;
 }
 
