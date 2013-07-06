@@ -169,181 +169,6 @@ int retLine(double current, int size,
     
 	double margin = 0.000001;
 
-	{
-		bool found = true;
-		while (found)
-		{
-			found = false;
-			std::set<int> setter;
-			vector<pointxy> pointsf;
-			const int size = contours->size();
-			pointsf.reserve(size);
-			for (vector<vector<pointxy>>::iterator it = contours->begin(); it < contours->end(); ++it)
-			{
-				pointsf.push_back(it->front());
-			}
-			const kd_tree treef(pointsf);
-			vector<vector<pointxy>> templ;
-			int i = 0;
-			for (vector<vector<pointxy>>::iterator it2 = contours->begin(); it2 < contours->end(); ++it2)
-			{
-				std::set<int>::iterator it = setter.find(i);
-				if (it == setter.end())
-				{
-					vector<pointxy> holder = *it2;
-					bool smallFound = true;
-						int tempInd = i;
-					while (smallFound)
-					{
-						smallFound = false;
-						pointxy start = holder.front();
-						pointxy end = holder.back();
-						int indf = treef.nearest(start,pointsf,tempInd,margin);
-						it = setter.find(indf);
-						if (indf == -1 || it != setter.end())
-						{
-							indf = treef.nearest(end,pointsf,tempInd,margin);
-							it = setter.find(indf);
-						}
-						if (indf != -1 && it == setter.end())
-						{
-							found = true;
-							vector<pointxy> temp = (*contours)[indf];
-							double dist1 = boost::geometry::distance(start, temp.front());
-							double dist2 = boost::geometry::distance(end, temp.front());
-					
-							if (dist2 < dist1)
-							{
-								double dist = boost::geometry::distance(holder.back(), temp.front());
-#ifdef ERROR_CHECK
-								if (dist > margin*2)
-									cout << "Error 1-1: Distance too great!\n";
-#endif
-								holder.insert(holder.end(), temp.begin()+1, temp.end());
-								if (indf > tempInd)
-								{
-									tempInd = indf;
-									smallFound = true;
-								}
-							}
-							else
-							{
-								reverse(holder.begin(), holder.end());
-								double dist = boost::geometry::distance(holder.back(), temp.front());
-#ifdef ERROR_CHECK
-								if (dist > margin*2)
-									cout << "Error 1-2: Distance too great!\n";
-#endif
-								holder.insert(holder.end(), temp.begin()+1, temp.end());
-								if (indf > tempInd)
-								{
-									tempInd = indf;
-									smallFound = true;
-								}
-							}
-							setter.insert(indf);
-						}
-					}
-				templ.push_back(holder);
-				}
-			++i;
-			}
-			contours->assign(templ.begin(), templ.end());
-		}
-	}
-	  
-	{
-		bool found = true;
-		while (found)
-		{
-			found = false;
-			std::set<int> setter;
-			vector<pointxy> pointsf;
-			const int size = contours->size();
-			pointsf.reserve(size);
-			for (vector<vector<pointxy>>::iterator it = contours->begin(); it < contours->end(); ++it)
-			{
-			pointsf.push_back(it->back());
-			}
-			const kd_tree treef(pointsf);
-			vector<vector<pointxy>> templ;
-			int i = 0;
-			for (vector<vector<pointxy>>::iterator it2 = contours->begin(); it2 < contours->end(); ++it2)
-			{
-				std::set<int>::iterator it = setter.find(i);
-				if (it == setter.end())
-				{
-					vector<pointxy> holder = *it2;
-					bool smallFound = true;
-						int tempInd = i;
-					while (smallFound)
-					{
-						smallFound = false;
-						pointxy start = holder.front();
-						pointxy end = holder.back();
-						int indf = treef.nearest(start,pointsf,tempInd,margin);
-						it = setter.find(indf);
-						if (indf == -1 || it != setter.end())
-						{
-							indf = treef.nearest(end,pointsf,tempInd,margin);
-							it = setter.find(indf);
-						}
-						if (indf != -1 && it == setter.end())
-						{
-							found = true;
-							vector<pointxy> temp = (*contours)[indf];
-							reverse(temp.begin(), temp.end());
-							double dist1 = boost::geometry::distance(start, temp.front());
-							double dist2 = boost::geometry::distance(end, temp.front());
-					
-							if (dist2 < dist1)
-							{
-								double dist = boost::geometry::distance(holder.back(), temp.front());
-#ifdef ERROR_CHECK
-								if (dist > margin*2)
-									cout << "Error 2-1: Distance too great!\n";
-#endif
-								holder.insert(holder.end(), temp.begin()+1, temp.end());
-								if (indf > tempInd)
-								{
-									tempInd = indf;
-									smallFound = true;
-								}
-							}
-							else
-							{
-								reverse(holder.begin(), holder.end());
-								double dist = boost::geometry::distance(holder.back(), temp.front());
-#ifdef ERROR_CHECK
-								if (dist > margin*2)
-									cout << "Error 2-2: Distance too great!\n";
-#endif
-								holder.insert(holder.end(), temp.begin()+1, temp.end());
-								if (indf > tempInd)
-								{
-									tempInd = indf;
-									smallFound = true;
-								}
-							}
-							setter.insert(indf);
-						}
-					}
-				templ.push_back(holder);
-				}
-				++i;
-			}
-			contours->assign(templ.begin(), templ.end());
-		}
-	}
-    bool gaps;
-	for (vector<vector<pointxy>>::iterator it = contours->begin(); it < contours->end(); ++it)
-    {
-        if (boost::geometry::distance(*(it->begin()), *(it->end())) > margin)
-        {
-            gaps = true; break;
-        }
-    }
-    if (gaps)
     {
         
         vector<std::pair<int, int>> unmatched;
@@ -405,7 +230,7 @@ int retLine(double current, int size,
         for (vector<std::pair<int,int>>::iterator it = unmatched.begin(); it < unmatched.end(); ++it)
         {
             {
-                double pushValue = 0;
+                double pushValue = -9999;
                 std::pair<int,int> p = *it;
                 int p1 = p.first;
                 int p2 = p.second;
@@ -653,16 +478,41 @@ int retLine(double current, int size,
 		}
     }
     int itt = 0;
-    for (vector<vector<pointxy>>::iterator it = pgap.begin(); it < pgap.end(); ++it)
+
+    for (vector<vector<pointxy>>::iterator it1 = pgap.begin(); it1 < pgap.end(); ++it1)
     {
-        if (boost::geometry::distance(*(it->begin()), *(it->end())) < margin)
+        bool contains = false;
+        pointxy pf = it1->front();
+        pointxy pb = it1->back();
+	    for (vector<vector<pointxy>>::iterator it = contours->begin(); it < contours->end(); ++it)
+	    {
+            pointxy cf = it->front();
+            pointxy cb = it->back();
+            if (boost::geometry::distance(cf, pf) < margin)
+            {
+                contains = true; break;
+            }
+            else if (boost::geometry::distance(cf, pb) < margin)
+            {
+                contains = true; break;
+            }
+            else if (boost::geometry::distance(cb, pf) < margin)
+            {
+                contains = true; break;
+            }
+            else if (boost::geometry::distance(cb, pb) < margin)
+            {
+                contains = true; break;
+            }
+	    }
+        if (!contains)
         {
-            pgap.erase(it);
-            it = pgap.begin() + itt;
+            pgap.erase(it1);
         }
         else
             itt++;
     }
+    
     contours->insert(contours->end(), pgap.begin(), pgap.end());
 	{
 		bool found = true;
