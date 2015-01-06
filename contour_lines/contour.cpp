@@ -32,8 +32,6 @@ void outputLines(string input, string output, vector<string> attnames, vector<do
 	cout << "Reading in file.\n";
 
 
-   /* Open the file. NC_NOWRITE tells netCDF we want read-only access
-    * to the file.*/
 	 
 	boost::shared_array<double> x;
 	boost::shared_array<double> y;
@@ -57,11 +55,6 @@ void outputLines(string input, string output, vector<string> attnames, vector<do
 		vector<future<int>> waiting;
 	   for (int i = 0; i < heights.size(); ++i)
 	   {
-		   /*
-int retLine(double current, int size, int counter,
-	boost::shared_array<double> &x, boost::shared_array<double> &y, boost::shared_array<double> &depth,
-	boost::shared_array<int> &ele, boost::shared_array<vector<vector<pointxy>>> &contours)
-		   */
 		   contours[i] = boost::shared_ptr<vector<vector<pointxy>>>(new vector<vector<pointxy>>());
 		   waiting.push_back(async(&retLine,heights[i], nele/3, x,y,depth,ele,contours[i]));
 	  }
@@ -89,7 +82,7 @@ int hpx_main(variables_map& vm)
 	string xs, ys;
 	int timestep;
   // Configure application-specific options.
-	bool outputInput = false;;
+	bool outputInput = false;
 	if (!inputValues(vm, input, output, attnames, heights, timestep, outputInput, xs, ys))
 	{
 		hpx::finalize(); // Handles HPX shutdown
@@ -99,6 +92,7 @@ int hpx_main(variables_map& vm)
 	hpx::finalize(); // Handles HPX shutdown
 	return 0;
 }
+
 int main(int argc, char *argv[])
 {
 	options_description desc_commandline("Usage: " HPX_APPLICATION_STRING " [options]");

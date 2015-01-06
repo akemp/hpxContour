@@ -5,11 +5,23 @@ cmake_minimum_required(VERSION 2.8.4 FATAL_ERROR)
 project(HPXContour CXX)
 
 # This adds the HPX cmake configuration directory to the search path.
-set(CMAKE_MODULE_PATH
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
     $ENV{HPX_DIR}/share/cmake-2.8/Modules)
 
 # Instruct cmake to find the HPX settings
 find_package(HPX)
+
+# Adjust auxiliary build settings for HPX to work properly
+if(NOT MSVC)
+  set(HPX_RPATH ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}${HPX_RPATH})
+else()
+  # enable solution folders for MSVC
+  set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+  if(HPX_NO_INSTALL)
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/$(Configuration)" CACHE PATH
+      "Prefix prepended to install directories." FORCE)
+  endif()
+endif()
 
 include_directories(${HPX_INCLUDE_DIR})
 link_directories(${HPX_LIBRARY_DIR})
@@ -18,9 +30,7 @@ find_package(HPX_NETCDF REQUIRED)
 include_directories(${NETCDF_INCLUDE_DIR})
 link_directories(${NETCDF_LIBRARY_DIR})
 
-include (HPX_INCLUDE)
-
-set(CMAKE_MODULE_PATH 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} 
     ${CMAKE_SOURCE_DIR}/cmake)
 
 find_package(HPX_SHAPELIB REQUIRED)
@@ -41,6 +51,4 @@ set (sources
 # add example executable
 add_hpx_executable(contour_lines
              SOURCES ${sources}
-             ${PLAYGROUND_FLAGS} 
-             FOLDER 
-             COMPONENT_DEPENDENCIES ${hpx_RUNTIME_LIBRARIES} netcdf shapelib)
+             COMPONENT_DEPENDENCIES iostreams netcdf shapelib)

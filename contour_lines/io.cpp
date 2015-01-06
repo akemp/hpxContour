@@ -1,5 +1,5 @@
 #include "datastructures.hpp"
-#include "shapefil.h"
+#include <shapefil.h>
 #include <boost/algorithm/string.hpp>
 #include <netcdf.h>
 
